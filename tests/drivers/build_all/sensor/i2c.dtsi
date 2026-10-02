@@ -1728,3 +1728,8 @@ test_i2c_as7341: as7341@df {
 	compatible = "ams,as7341";
 	reg = <0xdf>;
 };
+
+test_i2c_sts35: sts35@e0 {
+	compatible = "sensirion,sts35";
+	reg = <0xe0>;
+};
