@@ -65,6 +65,10 @@ New APIs and options
 
 * Bluetooth
 
+  * Host
+
+    * :c:func:`bt_l2cap_server_unregister`
+
   * Services
 
     * :kconfig:option:`CONFIG_BT_HIDS`
