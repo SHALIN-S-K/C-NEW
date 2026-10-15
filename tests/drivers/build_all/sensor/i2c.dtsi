@@ -1728,3 +1728,9 @@ test_i2c_as7341: as7341@df {
 	compatible = "ams,as7341";
 	reg = <0xdf>;
 };
+
+test_i2c_adxl373: adxl373@e0 {
+	compatible = "adi,adxl373";
+	reg = <0xe0>;
+	int1-gpios = <&test_gpio 0 0>;
+};
