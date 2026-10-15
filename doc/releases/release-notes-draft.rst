@@ -74,6 +74,11 @@ New APIs and options
     * :c:func:`bt_hids_report_get`
     * :c:func:`bt_hids_send_report`
 
+* FIDO2
+
+  * Added PSA Protected Storage backend, enable with
+    :kconfig:option:`CONFIG_FIDO2_STORAGE_PSA_PROTECTED_STORAGE`
+
 .. zephyr-keep-sorted-stop
 
 .. _boards_added_in_zephyr_4_6:
