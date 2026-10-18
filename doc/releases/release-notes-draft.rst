@@ -74,6 +74,14 @@ New APIs and options
     * :c:func:`bt_hids_report_get`
     * :c:func:`bt_hids_send_report`
 
+* VirtIO
+
+  * :c:func:`virtq_get_free_desc_count`
+  * :c:func:`virtq_process_used` and :c:member:`virtq.irq_cb` for ISR notifications of completions
+    reclaimed by polling.
+  * :c:member:`virtq.invalid_used_count` for tracking malformed used-ring entries without logging.
+  * :c:member:`virtq.faulted` for queues stopped after an impossible used-ring order.
+
 .. zephyr-keep-sorted-stop
 
 .. _boards_added_in_zephyr_4_6:
