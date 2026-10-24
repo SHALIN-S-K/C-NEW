@@ -34,6 +34,7 @@ LOG_MODULE_REGISTER(pcie_brcmstb, LOG_LEVEL_ERR);
 
 #define PCIE_MISC_RC_BAR1_CONFIG_LO           0x402c
 #define PCIE_MISC_RC_BAR1_CONFIG_LO_SIZE_MASK 0x1f
+#define PCIE_MISC_RC_BAR1_CONFIG_HI           0x4030
 
 #define PCIE_MISC_RC_BAR2_CONFIG_LO           0x4034
 #define PCIE_MISC_RC_BAR2_CONFIG_LO_SIZE_MASK 0x1f
@@ -52,6 +53,9 @@ LOG_MODULE_REGISTER(pcie_brcmstb, LOG_LEVEL_ERR);
 
 #define PCIE_MISC_UBUS_BAR2_CONFIG_REMAP                    0x40b4
 #define PCIE_MISC_UBUS_BAR2_CONFIG_REMAP_ACCESS_ENABLE_MASK 0x1
+
+#define PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_LO 0x40ac
+#define PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_HI 0x40b0
 
 #define PCIE_MISC_UBUS_BAR4_CONFIG_REMAP_LO 0x410c
 #define PCIE_MISC_UBUS_BAR4_CONFIG_REMAP_HI 0x4110
@@ -158,6 +162,8 @@ LOG_MODULE_REGISTER(pcie_brcmstb, LOG_LEVEL_ERR);
 
 struct pcie_brcmstb_config {
 	const struct pcie_ctrl_config *common;
+	uint64_t msi_bus_addr;
+	uint64_t msi_cpu_addr;
 	size_t regs_count;
 	struct {
 		uintptr_t addr;
@@ -517,6 +523,18 @@ static int pcie_brcmstb_setup(const struct device *dev)
 	tmp &= ~PCIE_MISC_RC_BAR1_CONFIG_LO_SIZE_MASK;
 	sys_write32(tmp, data->cfg_addr + PCIE_MISC_RC_BAR1_CONFIG_LO);
 
+	if (config->msi_cpu_addr != 0U) {
+		/* BCM2712 MIP doorbell: map one PCIe page to the proxy registers. */
+		sys_write32(upper_32_bits(config->msi_bus_addr),
+			    data->cfg_addr + PCIE_MISC_RC_BAR1_CONFIG_HI);
+		sys_write32(lower_32_bits(config->msi_cpu_addr) | BIT(0),
+			    data->cfg_addr + PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_LO);
+		sys_write32(upper_32_bits(config->msi_cpu_addr),
+			    data->cfg_addr + PCIE_MISC_UBUS_BAR1_CONFIG_REMAP_HI);
+		sys_write32(lower_32_bits(config->msi_bus_addr) | encode_ibar_size(0x1000U),
+			    data->cfg_addr + PCIE_MISC_RC_BAR1_CONFIG_LO);
+	}
+
 	tmp = sys_read32(data->cfg_addr + PCIE_MISC_RC_BAR3_CONFIG_LO);
 	tmp &= ~PCIE_MISC_RC_BAR3_CONFIG_LO_SIZE_MASK;
 	sys_write32(tmp, data->cfg_addr + PCIE_MISC_RC_BAR3_CONFIG_LO);
@@ -604,6 +622,7 @@ static int pcie_brcmstb_init(const struct device *dev)
 	return 0;
 }
 
+/* clang-format off */
 #define PCIE_BRCMSTB_INIT(n)                                                                       \
 	static struct pcie_brcmstb_data pcie_brcmstb_data_##n = {};                                \
                                                                                                    \
@@ -616,6 +635,14 @@ static int pcie_brcmstb_init(const struct device *dev)
                                                                                                    \
 	static const struct pcie_brcmstb_config pcie_brcmstb_cfg_##n = {                           \
 		.common = &pcie_ctrl_cfg_##n,                                                      \
+		IF_ENABLED(DT_INST_NODE_HAS_PROP(n, msi_parent), (                                 \
+			.msi_cpu_addr = DT_REG_ADDR(DT_INST_PHANDLE(n, msi_parent)),               \
+			.msi_bus_addr =                                                          \
+				((uint64_t)DT_PROP_BY_IDX(DT_INST_PHANDLE(n, msi_parent), \
+						 brcm_msi_pci_addr, 0) << 32) |                    \
+				DT_PROP_BY_IDX(DT_INST_PHANDLE(n, msi_parent),                     \
+					       brcm_msi_pci_addr, 1), \
+		))                                                                                \
 		.regs_count = DT_NUM_REGS(DT_DRV_INST(n)),                                         \
 		.regs =                                                                            \
 			{                                                                          \
@@ -633,3 +660,4 @@ static int pcie_brcmstb_init(const struct device *dev)
 			      &pcie_brcmstb_api);
 
 DT_INST_FOREACH_STATUS_OKAY(PCIE_BRCMSTB_INIT)
+/* clang-format on */
