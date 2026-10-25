@@ -114,6 +114,18 @@
 		#address-cells = <2>;
 		#size-cells = <1>;
 
+		mip0: msi-controller@1000130000 {
+			compatible = "brcm,bcm2712-mip";
+			reg = <0x10 0x130000 0xc0>;
+			msi-controller;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			brcm,msi-base-spi = <128>;
+			brcm,msi-num-spis = <64>;
+			brcm,msi-offset = <0>;
+			brcm,msi-pci-addr = <0xff 0xfffff000>;
+		};
+
 		pcie1: pcie@1000110000 {
 			compatible = "brcm,brcmstb-pcie";
 			reg = <0x10 0x110000 0x9310>,
@@ -130,6 +142,7 @@
 
 		pcie2: pcie@1000120000 {
 			compatible = "brcm,brcmstb-pcie";
+			msi-parent = <&mip0>;
 			reg = <0x10 0x120000 0x9310>,
 			      <0x0 0x410000 0x4000>,
 			      <0x0 0x0 0x400000>,

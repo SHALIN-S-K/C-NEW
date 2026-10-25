@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/dt-bindings/interrupt-controller/rp1-irq.h>
+
 &pcie2 {
 	rp1 {
 		#address-cells = <2>;
@@ -13,6 +15,14 @@
 			compatible = "fixed-clock";
 			clock-frequency = <50000000>;
 			#clock-cells = <0>;
+		};
+
+		rp1_irq: interrupt-controller@1f00108000 {
+			compatible = "raspberrypi,rp1-irq";
+			reg = <0x1f 0x108000 0x1000>;
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			msi-parent = <&mip0>;
 		};
 
 		rp1_pinctrl: pinctrl@1f000d0000 {
@@ -55,6 +65,9 @@
 		rp1_uart0: serial@1f00030000 {
 			compatible = "arm,pl011";
 			reg = <0x1f 0x30000 0x100>;
+			interrupt-parent = <&rp1_irq>;
+			interrupts = <RP1_IRQ_UART0 IRQ_TYPE_LEVEL 0>;
+			interrupt-names = "irq_25";
 			clocks = <&rp1_uartclk>;
 			clock-names = "uartclk";
 			status = "disabled";
@@ -63,6 +76,9 @@
 		rp1_uart1: serial@1f00034000 {
 			compatible = "arm,pl011";
 			reg = <0x1f 0x34000 0x100>;
+			interrupt-parent = <&rp1_irq>;
+			interrupts = <RP1_IRQ_UART1 IRQ_TYPE_LEVEL 0>;
+			interrupt-names = "irq_42";
 			clocks = <&rp1_uartclk>;
 			clock-names = "uartclk";
 			status = "disabled";
@@ -71,6 +87,9 @@
 		rp1_uart2: serial@1f00038000 {
 			compatible = "arm,pl011";
 			reg = <0x1f 0x38000 0x100>;
+			interrupt-parent = <&rp1_irq>;
+			interrupts = <RP1_IRQ_UART2 IRQ_TYPE_LEVEL 0>;
+			interrupt-names = "irq_43";
 			clocks = <&rp1_uartclk>;
 			clock-names = "uartclk";
 			status = "disabled";
@@ -79,6 +98,9 @@
 		rp1_uart3: serial@1f0003c000 {
 			compatible = "arm,pl011";
 			reg = <0x1f 0x3c000 0x100>;
+			interrupt-parent = <&rp1_irq>;
+			interrupts = <RP1_IRQ_UART3 IRQ_TYPE_LEVEL 0>;
+			interrupt-names = "irq_44";
 			clocks = <&rp1_uartclk>;
 			clock-names = "uartclk";
 			status = "disabled";
@@ -87,6 +109,9 @@
 		rp1_uart4: serial@1f00040000 {
 			compatible = "arm,pl011";
 			reg = <0x1f 0x40000 0x100>;
+			interrupt-parent = <&rp1_irq>;
+			interrupts = <RP1_IRQ_UART4 IRQ_TYPE_LEVEL 0>;
+			interrupt-names = "irq_45";
 			clocks = <&rp1_uartclk>;
 			clock-names = "uartclk";
 			status = "disabled";
