@@ -192,9 +192,9 @@ static int gpio_stellaris_port_toggle_bits(const struct device *dev,
 	uint32_t base = cfg->base;
 	uint32_t value;
 
-	value = sys_read32(gpio_stellaris_data_addr(base, GPIO_PORT_PINS_MASK));
-	value ^= mask;
-	sys_write32(value, gpio_stellaris_data_addr(base, GPIO_PORT_PINS_MASK));
+	/* Through the masked address, so the other pins of the port are not written */
+	value = sys_read32(gpio_stellaris_data_addr(base, mask));
+	sys_write32(value ^ mask, gpio_stellaris_data_addr(base, mask));
 
 	return 0;
 }
