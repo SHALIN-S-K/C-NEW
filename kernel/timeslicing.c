@@ -18,6 +18,14 @@ static struct _timeout slice_timeouts[CONFIG_MP_MAX_NUM_CPUS];
 /* Timeouts can expire on another CPU, so each CPU's flag must be atomic. */
 static atomic_t slice_expired[CONFIG_MP_MAX_NUM_CPUS];
 
+#ifndef CONFIG_SMP
+/* The thread the slice was started for, NULL if none */
+static struct k_thread *slice_owner;
+
+/* The owner's slice ran out while higher priority threads ran */
+static bool slice_owner_done;
+#endif /* !CONFIG_SMP */
+
 #ifdef CONFIG_SWAP_NONATOMIC
 /* If z_swap() isn't atomic, then it's possible for a timer interrupt
  * to try to timeslice away _current after it has already pended
@@ -102,8 +110,79 @@ static void slice_reset(int slice_size)
 
 void z_time_slice_reset(struct k_thread *thread)
 {
-	slice_reset(z_time_slice_size(thread));
+	int slice_size = z_time_slice_size(thread);
+
+#ifndef CONFIG_SMP
+	slice_owner = ((thread == _current) && (slice_size != 0)) ? thread : NULL;
+	slice_owner_done = false;
+#endif /* !CONFIG_SMP */
+	slice_reset(slice_size);
 }
+
+#ifndef CONFIG_SMP
+/* The owner of the slice waits to run again: it is queued only then, not
+ * once it blocked.
+ */
+static inline bool slice_owner_waits(struct k_thread *thread)
+{
+	return (slice_owner != NULL) && (slice_owner != thread) &&
+	       z_is_thread_queued(slice_owner);
+}
+
+/* Context switch to new_thread. SMP needs none of this: it puts a preempted
+ * thread back behind the other threads of its priority.
+ */
+void z_time_slice_switch(struct k_thread *new_thread)
+{
+	int cpu = _current_cpu->id;
+
+	/* Back to the thread the slice was started for, after a preemption */
+	if (new_thread == slice_owner) {
+		/* If the slice ran out meanwhile, end it on the next tick */
+		if (slice_owner_done || (atomic_get(&slice_expired[cpu]) &&
+					 z_is_inactive_timeout(&slice_timeouts[cpu]))) {
+			slice_owner_done = false;
+			(void)z_try_abort_timeout(&slice_timeouts[cpu]);
+			z_add_timeout(&slice_timeouts[cpu], slice_timeout, K_TICKS(0));
+		}
+		return;
+	}
+
+	/* A slice keeps running while threads of higher priority than the
+	 * thread it was started for preempt it, however they switch among
+	 * themselves, and that thread carries on with it when it runs again.
+	 * Starting a new slice instead would let a thread preempted more
+	 * often than its slice keep the CPU from the other threads of its
+	 * priority forever. Once it ran out, z_time_slice() times the threads
+	 * that preempted it instead, so that they still take turns.
+	 */
+	if (slice_owner_waits(new_thread) &&
+	    z_is_prio_higher(new_thread->base.prio, slice_owner->base.prio)) {
+		if (slice_owner_done) {
+			int slice_size = z_time_slice_size(new_thread);
+
+			/* A slice that is not running needs no stopping */
+			if ((slice_size != 0) ||
+			    !z_is_inactive_timeout(&slice_timeouts[cpu])) {
+				slice_reset(slice_size);
+			}
+		}
+		return;
+	}
+
+	int slice_size = z_time_slice_size(new_thread);
+
+	/* No slice is running and new_thread gets none: nothing to do */
+	if ((slice_owner == NULL) && (slice_size == 0) &&
+	    z_is_inactive_timeout(&slice_timeouts[cpu])) {
+		return;
+	}
+
+	slice_owner = (slice_size != 0) ? new_thread : NULL;
+	slice_owner_done = false;
+	slice_reset(slice_size);
+}
+#endif /* !CONFIG_SMP */
 
 static ALWAYS_INLINE bool thread_defines_time_slice_size(struct k_thread *thread)
 {
@@ -173,6 +252,19 @@ void z_time_slice(void)
 #endif
 
 	int slice_size = 0;
+
+#ifndef CONFIG_SMP
+	/* The slice of a preempted thread ran out: it gives way once it runs
+	 * again, and the threads running meanwhile get a slice of their own.
+	 */
+	if (atomic_get(&slice_expired[_current_cpu->id]) && !slice_owner_done &&
+	    slice_owner_waits(curr)) {
+		slice_owner_done = true;
+		slice_reset(z_time_slice_size(curr));
+		z_sched_spinlock_unlock(key);
+		return;
+	}
+#endif /* !CONFIG_SMP */
 
 	if (atomic_get(&slice_expired[_current_cpu->id])) {
 		slice_size = z_time_slice_size(curr);

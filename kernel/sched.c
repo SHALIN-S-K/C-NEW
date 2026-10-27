@@ -172,7 +172,7 @@ static ALWAYS_INLINE void update_cache(int preempt_ok)
 	if (should_preempt(thread, preempt_ok)) {
 #ifdef CONFIG_TIMESLICING
 		if (thread != _current) {
-			z_time_slice_reset(thread);
+			z_time_slice_switch(thread);
 		}
 #endif /* CONFIG_TIMESLICING */
 		update_metairq_preempt(thread);
