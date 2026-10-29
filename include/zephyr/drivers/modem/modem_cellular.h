@@ -217,6 +217,12 @@ struct modem_cellular_data {
 	 * the modem already powered; the init script then confirms it responds.
 	 */
 	bool power_on_skipped;
+	/** Set when a suspend arrives while CMUX is connecting; acted on once it settles. */
+	bool suspend_pending;
+	/** Set when the CMUX connect attempt has failed; a suspend is then acted on at once. */
+	bool cmux_connect_failed;
+	/** Set once the UART has opened for the CMUX connect attempt. */
+	bool cmux_bus_opened;
 
 #if defined(CONFIG_MODEM_CELLULAR_STATS)
 	/** Operational statistics, exposed via cellular_get_stats(). */
@@ -347,6 +353,32 @@ struct modem_cellular_config {
  * Called from the DEVICE_DT_INST_DEFINE macro for cellular modem drivers.
  */
 int modem_cellular_init(const struct device *dev);
+
+#if defined(CONFIG_ZTEST)
+/**
+ * @brief Halt a cellular modem instance between tests.
+ *
+ * Stops the instance where it is, without running the shutdown sequence, so that a
+ * following modem_cellular_init() boots it as if from reset. On return:
+ *
+ * - No timer, work item or event of the instance is pending or running.
+ * - The chat, CMUX and PPP instances and every UART, DLCI and user pipe are released.
+ * - The net_mgmt and ring GPIO callbacks registered by modem_cellular_init() are removed.
+ * - State that would otherwise outlive a power cycle is cleared: the registration status,
+ *   APN, recovery and script failure counters, original baudrate and periodic script pause.
+ * - The PPP network interface is dormant, as after its initialisation.
+ *
+ * The callback set with cellular_set_callback() is kept. GPIOs are not driven and the UART
+ * configuration is left untouched, so the next boot treats the baudrate it finds as the one
+ * the modem powers up at.
+ *
+ * Calling it on an instance that is already halted has no effect. The caller ensures no
+ * other thread calls into the instance while it runs.
+ *
+ * @param dev Cellular modem instance.
+ */
+void modem_cellular_ztest_halt(const struct device *dev);
+#endif
 
 int modem_cellular_pm_action(const struct device *dev, enum pm_device_action action);
 
