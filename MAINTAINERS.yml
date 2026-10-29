@@ -2694,8 +2694,11 @@ Documentation Infrastructure:
   files:
     - drivers/ptp_clock/
     - include/zephyr/drivers/ptp_clock.h
+    - tests/drivers/ptp_clock/
   labels:
     - "area: Clocks"
+  tests:
+    - drivers.ptp_clock
 
 "Drivers: PWM":
   status: maintained
