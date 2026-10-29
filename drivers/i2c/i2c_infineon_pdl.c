@@ -1317,6 +1317,7 @@ static int ifx_cat1_i2c_recover_bus(const struct device *dev)
 		.get_sda = ifx_cat1_i2c_bitbang_get_sda,
 	};
 	uint32_t bitrate_cfg;
+	bool scb_was_enabled;
 	int error = 0;
 
 	if (!gpio_is_ready_dt(&config->scl)) {
@@ -1330,6 +1331,15 @@ static int ifx_cat1_i2c_recover_bus(const struct device *dev)
 	}
 
 	k_sem_take(&data->operation_sem, K_FOREVER);
+
+	/*
+	 * Recovery must leave the SCB enabled or disabled as it found it.  The
+	 * runtime PM reference resumes a runtime-suspended instance first, and
+	 * the put lets PM suspend it again.  An SCB still disabled after the
+	 * get stays disabled.
+	 */
+	(void)pm_device_runtime_get(dev);
+	scb_was_enabled = (SCB_CTRL(config->base) & SCB_CTRL_ENABLED_Msk) != 0U;
 
 	/*
 	 * An enabled SCB counts the bus as busy from SCL going low until it
@@ -1379,8 +1389,11 @@ restore:
 	(void)pinctrl_apply_state(config->pcfg, PINCTRL_STATE_DEFAULT);
 
 	/* Re-enable only once the pins belong to the SCB again. */
-	ifx_cat1_i2c_enable(config, data);
+	if (scb_was_enabled) {
+		ifx_cat1_i2c_enable(config, data);
+	}
 
+	(void)pm_device_runtime_put(dev);
 	k_sem_give(&data->operation_sem);
 
 	return error;
