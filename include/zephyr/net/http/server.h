@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include <zephyr/kernel.h>
+#include <zephyr/net/http/frame.h>
 #include <zephyr/net/http/parser.h>
 #include <zephyr/net/http/hpack.h>
 #include <zephyr/net/http/status.h>
@@ -379,15 +380,6 @@ struct http2_stream_ctx {
 	bool end_stream_sent : 1;
 };
 
-/** @brief HTTP/2 frame representation. */
-struct http2_frame {
-	uint32_t length; /**< Frame payload length. */
-	uint32_t stream_identifier; /**< Stream ID the frame belongs to. */
-	uint8_t type; /**< Frame type. */
-	uint8_t flags; /**< Frame flags. */
-	uint8_t padding_len; /**< Frame padding length. */
-};
-
 /** @brief Context for capturing HTTP headers */
 struct http_header_capture_ctx {
 	/** Buffer for HTTP headers captured for application use */
@@ -579,6 +571,9 @@ struct http_client_ctx {
 
 	/** Flag indicating that HTTP2 preface was sent. */
 	bool preface_sent : 1;
+
+	/** Flag indicating that the client acknowledged the server's SETTINGS. */
+	bool settings_acked : 1;
 
 	/** Flag indicating that HTTP1 headers were sent. */
 	bool http1_headers_sent : 1;
