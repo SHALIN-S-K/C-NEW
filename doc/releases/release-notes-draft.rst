@@ -78,6 +78,11 @@ New APIs and options
     * :c:func:`bt_hids_report_get`
     * :c:func:`bt_hids_send_report`
 
+* Display
+
+  * :c:func:`display_set_timing`
+  * :c:func:`display_get_timing`
+
 .. zephyr-keep-sorted-stop
 
 .. _boards_added_in_zephyr_4_6:
