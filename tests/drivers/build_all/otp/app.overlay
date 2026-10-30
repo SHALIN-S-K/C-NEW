@@ -28,6 +28,12 @@
 #include "i2c.dtsi"
 		};
 
+		test_sunxi_sid: sunxi-sid@beefdead {
+			compatible = "allwinner,sunxi-sid";
+			reg = <0xbeefdead 0x1000>;
+			status = "okay";
+		};
+
 		test_axi_sysid: axi-sysid@deadbeef {
 			compatible = "adi,axi-sysid";
 			reg = <0xdeadbeef 0x1000>;
