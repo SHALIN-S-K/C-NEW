@@ -1,0 +1,13 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/ {
+	dut: uart-emul {
+		compatible = "zephyr,uart-emul";
+		status = "okay";
+		current-speed = <115200>;
+		loopback;
+		rx-fifo-size = <2>;
+		tx-fifo-size = <16>;
+		latch-buffer-size = <2>;
+	};
+};
