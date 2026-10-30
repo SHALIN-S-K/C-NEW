@@ -1728,3 +1728,9 @@ test_i2c_as7341: as7341@df {
 	compatible = "ams,as7341";
 	reg = <0xdf>;
 };
+
+test_i2c_scd30: scd30@e0 {
+	compatible = "sensirion,scd30";
+	reg = <0xe0>;
+	ready-gpios = <&test_gpio 0 GPIO_ACTIVE_HIGH>;
+};
