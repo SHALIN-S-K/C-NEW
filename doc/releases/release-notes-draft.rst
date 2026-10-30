@@ -78,6 +78,14 @@ New APIs and options
     * :c:func:`bt_hids_report_get`
     * :c:func:`bt_hids_send_report`
 
+* Interrupt controller
+
+  * :c:func:`its_alloc_intids` and :c:func:`its_alloc_map_intids`.
+  * :kconfig:option:`CONFIG_GIC_V3_ITS_MAX_DEVICES` and
+    :kconfig:option:`CONFIG_GIC_V3_ITS_MAX_VECTORS`.
+  * ``zephyr,device-id-bits`` property of :dtcompatible:`arm,gic-v3-its` and
+    ``zephyr,lpi-id-bits`` property of :dtcompatible:`arm,gic-v3`.
+
 .. zephyr-keep-sorted-stop
 
 .. _boards_added_in_zephyr_4_6:
